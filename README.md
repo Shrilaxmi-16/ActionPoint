@@ -4,6 +4,8 @@ ActionPoint is an agentic application powered by Gemini and the Google Agent Dev
 
 ![ActionPoint Demo](docs/assets/demo.gif)
 
+> 🎥 **Video Demo with Audio**: [Download MP4 with Lo-Fi Music](docs/assets/actionpoint_demo_lofi.mp4) | [Download MP4 Original](docs/assets/actionpoint_demo.mp4)
+
 ---
 
 ## 🚀 What the Agent Does
