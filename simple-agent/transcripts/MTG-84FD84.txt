@@ -1,0 +1,7 @@
+[09:00] Sarah (Product Lead): Good morning everyone. Let's do a quick sync on Project Horizon launch readiness.
+[09:01] Dave: Backend migration for Firestore is 90% done, but legacy auth latency spikes under 500 RPS.
+[09:03] Dave: We decided to migrate auth to Cloud Identity instead of patching legacy service.
+[09:04] Sarah: Locked in. Dave, draft the Cloud Identity migration RFC by Thursday 5 PM.
+[09:06] Elena: Kanban mockups done. Open question: should mobile support drag-and-drop or view-only?
+[09:07] Sarah: Elena, check Mixpanel mobile analytics by Friday.
+[09:09] Marcus: Cloud Run is stable. Marcus will configure Cloud Monitoring alert policies by Monday EOD.

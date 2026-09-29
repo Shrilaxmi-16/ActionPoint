@@ -1,0 +1,12 @@
+[09:00] Sarah (Product Lead): Good morning everyone. Let's do a quick sync on Project Horizon launch readiness. On the call we have Sarah, Dave (Backend), Elena (Frontend/Design), and Marcus (DevOps).
+[09:01] Dave: From the backend side, database migration for Firestore is 90% done. But we discovered that the legacy auth service latency spikes under 500 RPS.
+[09:02] Sarah: That's a critical blocker for our public beta next month. What are our options?
+[09:03] Dave: We decided after yesterday's spike test that we will migrate auth to Cloud Identity instead of patching the legacy service. It's much cleaner and gives us built-in MFA.
+[09:04] Sarah: Agreed, let's lock in Cloud Identity as our final decision for auth. Dave, can you own writing the migration RFC and have it ready for review by this Thursday?
+[09:05] Dave: Sure, I will draft the Cloud Identity migration RFC and post it in the team channel by Thursday 5 PM.
+[09:06] Elena: On the frontend, we finished the Kanban dashboard mockups. However, we're waiting on clarity on whether we should support drag-and-drop on mobile browsers or keep mobile view-only.
+[09:07] Sarah: Good question. Elena, let's keep that open for now until we see analytics on tablet vs phone traffic. Can you check our Mixpanel data on mobile viewport usage by Friday?
+[09:08] Elena: Yes, I'll analyze mobile device analytics and report back by Friday.
+[09:09] Marcus: On infrastructure, the Cloud Run services are running smoothly, but we need to configure our alerting thresholds for Vertex AI quota errors. Marcus will set up Cloud Monitoring alert policies by Monday EOD.
+[09:10] Sarah: Also, one open question: do we need a separate staging project for the Agent Engine runtime, or can we share the existing dev project? Let's have Marcus look into that and update us asynchronously.
+[09:11] Sarah: Great. To recap: Dave drafts the Auth RFC by Thursday, Elena checks mobile analytics by Friday, and Marcus configures alert policies by Monday. Thanks all!

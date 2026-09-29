@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ActionPoint — Meeting Action Intelligence</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined">
+<!-- Markdown Parser -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --bg-main: #f8fafc;
+    --card-bg: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --badge-pending: #f59e0b;
+    --badge-progress: #3b82f6;
+    --badge-done: #10b981;
+    --badge-critical: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg-main); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; }
+  
+  /* Top Navigation */
+  header {
+    background: #0f172a;
+    color: #fff;
+    padding: 0.8rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #334155;
+  }
+  .brand { display: flex; align-items: center; gap: 0.6rem; font-weight: 700; font-size: 1.15rem; }
+  .brand span.badge { font-size: 0.75rem; background: var(--primary); padding: 0.2rem 0.5rem; border-radius: 9999px; font-weight: 600; }
+  .nav-tabs { display: flex; gap: 0.5rem; }
+  .nav-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    padding: 0.5rem 0.9rem;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover { color: #fff; background: #1e293b; }
+  .nav-btn.active { color: #fff; background: var(--primary); }
+
+  /* App Container Layout */
+  .app-body { flex: 1; display: flex; overflow: hidden; }
+  .main-panel { flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.2rem; }
+  .chat-sidebar { width: 440px; border-left: 1px solid var(--border); background: #fff; display: flex; flex-direction: column; }
+
+  /* Screens */
+  .screen { display: none; flex-direction: column; gap: 1.2rem; }
+  .screen.active { display: flex; }
+
+  /* Cards & Widgets */
+  .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+  h2 { margin: 0 0 0.8rem 0; font-size: 1.25rem; font-weight: 700; }
+  h3 { margin: 0 0 0.5rem 0; font-size: 1.05rem; }
+
+  /* Upload Screen */
+  textarea.transcript-box {
+    width: 100%;
+    height: 180px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem;
+    font-family: inherit;
+    font-size: 0.95rem;
+    resize: vertical;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 0.65rem 1.2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-secondary {
+    background: #475569;
+    color: #fff;
+    border: none;
+    padding: 0.65rem 1.2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-secondary:hover { background: #334155; }
+  .btn-green {
+    background: #10b981;
+    color: #fff;
+    border: none;
+    padding: 0.65rem 1.2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-green:hover { background: #059669; }
+
+  /* Badges */
+  .tag { font-size: 0.75rem; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 600; width: fit-content; display: inline-block; }
+  .tag.high, .tag.critical { background: #fee2e2; color: #b91c1c; }
+  .tag.medium { background: #fef3c7; color: #b45309; }
+  .tag.low { background: #e0f2fe; color: #0369a1; }
+
+  /* Data Table for Action Items */
+  .action-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 0.6rem; }
+  .action-table th, .action-table td { border: 1px solid var(--border); padding: 0.7rem 0.9rem; text-align: left; }
+  .action-table th { background: #f8fafc; font-weight: 600; color: #475569; }
+  .action-table tr:hover { background: #f8fafc; }
+
+  /* Review Screen */
+  .review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+  .editable-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+
+  /* Visual Impact Dashboard Cards */
+  .metric-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+  .metric-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.3rem;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 4px;
+    background: var(--primary);
+  }
+  .metric-card.critical::before { background: #ef4444; }
+  .metric-card.success::before { background: #10b981; }
+  .metric-card.warning::before { background: #f59e0b; }
+
+  .metric-val { font-size: 2.2rem; font-weight: 800; color: #0f172a; margin-top: 0.3rem; line-height: 1; }
+  .metric-label { color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.2rem; }
+  .visual-card-box {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.4rem;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);
+  }
+
+  /* Progress Bars & Charts */
+  .progress-item { margin-bottom: 0.8rem; }
+  .progress-header { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; }
+  .progress-bar { height: 8px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 9999px; transition: width 0.3s; }
+  .fill-critical { background: #ef4444; }
+  .fill-high { background: #f97316; }
+  .fill-medium { background: #3b82f6; }
+  .fill-low { background: #10b981; }
+
+  /* High Impact Visual Card */
+  .hero-meeting-card {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    color: #fff;
+    border-radius: 14px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2);
+  }
+  .hero-meeting-card h3 { color: #60a5fa; margin: 0; font-size: 1.2rem; }
+  .hero-tag { background: rgba(255,255,255,0.15); padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.8rem; }
+
+  /* Output Display Box for Mails / Agendas */
+  .content-display-box {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    line-height: 1.6;
+    font-size: 0.95rem;
+  }
+  .content-display-box h1, .content-display-box h2 { color: #0f172a; margin-top: 0; }
+  .content-display-box table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  .content-display-box th, .content-display-box td { border: 1px solid var(--border); padding: 0.6rem 0.8rem; }
+  .content-display-box th { background: #f8fafc; }
+
+  /* Chat Sidebar */
+  #log { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+  .msg { display: flex; flex-direction: column; width: 100%; }
+  .msg.user { align-items: flex-end; }
+  .msg.assistant { align-items: flex-start; }
+  .bubble {
+    padding: 0.8rem 1.1rem;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    max-width: 95%;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .msg.user .bubble { background: var(--primary); color: #fff; border: none; }
+  .chat-input-bar { display: flex; gap: 0.5rem; padding: 0.8rem; border-top: 1px solid var(--border); background: #fff; }
+  .chat-input-bar input { flex: 1; padding: 0.65rem 0.8rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; }
+  .chat-input-bar button { background: var(--primary); color: #fff; border: none; border-radius: 6px; padding: 0.65rem 1.1rem; font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="material-symbols-outlined" style="color:#60a5fa">check_circle</span>
+    ActionPoint
+    <span class="badge">Meeting Intelligence</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-btn active" id="tab-upload" onclick="switchTab('upload')">1. Ingest Transcript</button>
+    <button class="nav-btn" id="tab-review" onclick="switchTab('review')">2. Review & Confirm</button>
+    <button class="nav-btn" id="tab-actions" onclick="switchTab('actions')">3. Action Items</button>
+    <button class="nav-btn" id="tab-comms" onclick="switchTab('comms')">4. Communications & Agendas</button>
+    <button class="nav-btn" id="tab-dashboard" onclick="switchTab('dashboard')">5. Visual Dashboard</button>
+  </div>
+</header>
+
+<div class="app-body">
+  <!-- Main Interactive Screen -->
+  <div class="main-panel">
+    
+    <!-- 1. Upload Screen -->
+    <div id="screen-upload" class="screen active">
+      <div class="card">
+        <h2>Ingest Meeting Transcript</h2>
+        <p style="color:var(--text-muted); margin-bottom:1rem;">Paste your audio transcript or raw meeting notes. ActionPoint will parse speakers, extract decisions, action items, and open blockers.</p>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap:0.8rem; margin-bottom:1rem;">
+          <div>
+            <label style="font-weight:600; font-size:0.85rem; display:block; margin-bottom:0.3rem;">🏢 Organization Project / Team:</label>
+            <input type="text" id="transcript-project" value="Project Horizon" placeholder="e.g. Project Horizon, Project Atlas..." style="width:100%; padding:0.55rem 0.7rem; border:1px solid var(--border); border-radius:6px; font-size:0.88rem;">
+          </div>
+          <div>
+            <label style="font-weight:600; font-size:0.85rem; display:block; margin-bottom:0.3rem;">📝 Meeting Title (Optional):</label>
+            <input type="text" id="transcript-title" placeholder="e.g. Sprint Sync, Architecture Review..." style="width:100%; padding:0.55rem 0.7rem; border:1px solid var(--border); border-radius:6px; font-size:0.88rem;">
+          </div>
+          <div>
+            <label style="font-weight:600; font-size:0.85rem; display:block; margin-bottom:0.3rem;">📅 Meeting Date:</label>
+            <input type="date" id="transcript-date" style="width:100%; padding:0.55rem 0.7rem; border:1px solid var(--border); border-radius:6px; font-size:0.88rem; background:#fff;">
+          </div>
+          <div>
+            <label style="font-weight:600; font-size:0.85rem; display:block; margin-bottom:0.3rem;">⏰ Meeting Time:</label>
+            <input type="time" id="transcript-time" style="width:100%; padding:0.55rem 0.7rem; border:1px solid var(--border); border-radius:6px; font-size:0.88rem; background:#fff;">
+          </div>
+        </div>
+
+        <textarea id="transcript-input" class="transcript-box" placeholder="Paste meeting transcript here..."></textarea>
+        <div style="margin-top:1rem; display:flex; gap:0.8rem;">
+          <button class="btn-primary" id="btn-extract" onclick="extractFromInput()">Extract Action Items</button>
+          <button class="btn-secondary" onclick="loadSampleTranscript()">Load Sample Transcript</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Review & Confirm Screen -->
+    <div id="screen-review" class="screen">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+          <h2 style="margin:0;">Review Extracted Items</h2>
+          <button class="btn-green" id="btn-confirm" onclick="confirmAndSaveAll()">Confirm & Save to Registry</button>
+        </div>
+        <div class="review-grid">
+          <div class="editable-card">
+            <h3>Meeting Overview</h3>
+            <div id="review-overview" style="font-size:0.9rem; color:#334155; line-height:1.5;">Extract a transcript first.</div>
+          </div>
+          <div class="editable-card">
+            <h3>Decisions (Confirmed)</h3>
+            <div id="review-decisions" style="font-size:0.9rem; color:#334155;">None</div>
+          </div>
+        </div>
+        <div style="margin-top:1.2rem;">
+          <h3>Extracted Action Items</h3>
+          <div id="review-action-items">None</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Dedicated Action Items Registry -->
+    <div id="screen-actions" class="screen">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
+          <div>
+            <h2 style="margin:0;">Tracked Action Items</h2>
+            <p style="color:var(--text-muted); font-size:0.88rem; margin:0.3rem 0 0 0;">Complete registry of action items across all meetings.</p>
+          </div>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn-primary" style="font-size:0.85rem;" onclick="loadActionItemsTable()">Refresh List</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="action-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Action Item Title</th>
+                <th>Owner</th>
+                <th>Due Date</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Project</th>
+              </tr>
+            </thead>
+            <tbody id="action-table-body">
+              <tr><td colspan="7" style="text-align:center; color:#94a3b8;">Loading action items...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Communications & Agendas Screen (With Specific Individual Selector) -->
+    <div id="screen-comms" class="screen">
+      <div class="card">
+        <h2>Follow-Up Communications & Agendas</h2>
+        <p style="color:var(--text-muted); margin-bottom:1.2rem;">Generate general recaps, agendas, or target specific individual emails.</p>
+        
+        <!-- Project & Individual Email Selector Bar -->
+        <div style="background:#f1f5f9; border-radius:8px; padding:1.1rem; margin-bottom:1.2rem; display:flex; flex-direction:column; gap:0.8rem;">
+          <div style="display:flex; align-items:center; gap:0.8rem; flex-wrap:wrap;">
+            <label style="font-weight:600; font-size:0.9rem; min-width:140px;">🏢 Project / Team:</label>
+            <select id="project-select" onchange="onProjectChanged()" style="padding:0.5rem 0.8rem; border-radius:6px; border:1px solid #cbd5e1; font-size:0.9rem; min-width:220px; font-weight:600; background:#fff;">
+              <option value="ALL">All Projects / Cross-Functional</option>
+            </select>
+            <span style="font-size:0.8rem; color:#64748b;">(Filters attendees and meetings across your organization)</span>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:0.8rem; flex-wrap:wrap;">
+            <label style="font-weight:600; font-size:0.9rem; min-width:140px;">👤 Team Participant:</label>
+            <select id="attendee-select" style="padding:0.5rem 0.8rem; border-radius:6px; border:1px solid #cbd5e1; font-size:0.9rem; min-width:220px; background:#fff;">
+              <option value="ALL">All Attendees in Team (Full Digest)</option>
+            </select>
+            <button class="btn-primary" style="background:#7c3aed;" onclick="triggerIndividualEmail()">✉️ Draft Email for Selected Person</button>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:0.8rem; flex-wrap:wrap; margin-bottom:1.5rem;">
+          <button class="btn-primary" onclick="triggerCommsAction('general_email')">📌 Draft Team Recap Email</button>
+          <button class="btn-primary" style="background:#0284c7;" onclick="triggerCommsAction('agenda')">📋 Generate Team Sync Agenda</button>
+        </div>
+        
+        <div id="comms-output-container" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem;">
+            <h3 id="comms-output-title" style="margin:0;">Generated Content</h3>
+            <button class="btn-secondary" style="font-size:0.8rem; padding:0.3rem 0.6rem;" onclick="copyCommsContent()">Copy to Clipboard</button>
+          </div>
+          <div class="content-display-box" id="comms-output-box"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Visual Impact Dashboard -->
+    <div id="screen-dashboard" class="screen">
+      <!-- High Impact Metric Cards -->
+      <div class="metric-row">
+        <div class="metric-card">
+          <div class="metric-label">Total Meetings</div>
+          <div class="metric-val" id="metric-meetings">0</div>
+        </div>
+        <div class="metric-card critical">
+          <div class="metric-label">Active Action Items</div>
+          <div class="metric-val" id="metric-active-items">0</div>
+        </div>
+        <div class="metric-card success">
+          <div class="metric-label">Decisions Reached</div>
+          <div class="metric-val" id="metric-decisions">0</div>
+        </div>
+        <div class="metric-card warning">
+          <div class="metric-label">Open Blockers</div>
+          <div class="metric-val" id="metric-questions">0</div>
+        </div>
+      </div>
+
+      <!-- Executive Visual Summary Hero Card -->
+      <div class="hero-meeting-card" id="hero-meeting-card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="hero-tag">🌟 LATEST CONFIRMED MEETING INTELLIGENCE</span>
+          <span style="font-size:0.85rem; color:#94a3b8;" id="hero-date">Today</span>
+        </div>
+        <h3 id="hero-title">No confirmed meetings yet</h3>
+        <p style="margin:0; color:#cbd5e1; font-size:0.92rem; line-height:1.5;" id="hero-summary">
+          Ingest a transcript to generate executive visual insights and decision metrics.
+        </p>
+        <div style="display:flex; gap:0.6rem; flex-wrap:wrap; font-size:0.82rem;" id="hero-attendees"></div>
+      </div>
+
+      <!-- Visual Analytics Distribution Cards -->
+      <div class="dashboard-grid">
+        <div class="visual-card-box">
+          <h3 style="display:flex; align-items:center; gap:0.4rem;">
+            <span class="material-symbols-outlined" style="color:var(--primary); font-size:1.2rem;">donut_large</span>
+            Priority Distribution
+          </h3>
+          <div id="priority-progress-bars" style="margin-top:1rem;">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <div class="visual-card-box">
+          <h3 style="display:flex; align-items:center; gap:0.4rem;">
+            <span class="material-symbols-outlined" style="color:#7c3aed; font-size:1.2rem;">group</span>
+            Top Task Ownership
+          </h3>
+          <div id="owner-distribution-bars" style="margin-top:1rem;">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Agent Chat Sidebar -->
+  <div class="chat-sidebar">
+    <div style="padding:0.8rem 1rem; border-bottom:1px solid var(--border); font-weight:700; background:#f8fafc; display:flex; justify-content:space-between; align-items:center;">
+      <span>ActionPoint Co-Pilot</span>
+      <span style="font-size:0.75rem; color:#10b981; font-weight:600;">● Online</span>
+    </div>
+    <div id="log"></div>
+    <form class="chat-input-bar" id="chat-form">
+      <input id="chat-input" placeholder="Ask ActionPoint or give command…" autocomplete="off">
+      <button type="submit">Send</button>
+    </form>
+  </div>
+</div>
+
+<script>
+let extractedData = null;
+let rawCommsText = "";
+
+function switchTab(tabName) {
+  document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(scr => scr.classList.remove('active'));
+  
+  const targetTab = document.getElementById(`tab-${tabName}`);
+  if (targetTab) targetTab.classList.add('active');
+  const scr = document.getElementById(`screen-${tabName}`);
+  if (scr) scr.classList.add('active');
+
+  if (tabName === 'actions') loadActionItemsTable();
+  if (tabName === 'comms') loadAttendeesDropdown();
+  if (tabName === 'dashboard') loadMetrics();
+}
+
+function loadSampleTranscript() {
+  document.getElementById('transcript-input').value = `[09:00] Sarah (Product Lead): Good morning everyone. Let's do a quick sync on Project Horizon launch readiness.
+[09:01] Dave: Backend migration for Firestore is 90% done, but legacy auth latency spikes under 500 RPS.
+[09:03] Dave: We decided to migrate auth to Cloud Identity instead of patching legacy service.
+[09:04] Sarah: Locked in. Dave, draft the Cloud Identity migration RFC by Thursday 5 PM.
+[09:06] Elena: Kanban mockups done. Open question: should mobile support drag-and-drop or view-only?
+[09:07] Sarah: Elena, check Mixpanel mobile analytics by Friday.
+[09:09] Marcus: Cloud Run is stable. Marcus will configure Cloud Monitoring alert policies by Monday EOD.`;
+}
+
+async function extractFromInput() {
+  const text = document.getElementById('transcript-input').value.trim();
+  const projInput = document.getElementById('transcript-project');
+  const titleInput = document.getElementById('transcript-title');
+  const dateInput = document.getElementById('transcript-date');
+  const timeInput = document.getElementById('transcript-time');
+
+  const project = (projInput && projInput.value.trim()) || 'Project Horizon';
+  const meetingTitle = (titleInput && titleInput.value.trim()) || `${project} Sync`;
+  const meetingDate = (dateInput && dateInput.value) || new Date().toISOString().split('T')[0];
+  const meetingTime = (timeInput && timeInput.value) || '';
+
+  if (!text) { alert('Please enter a transcript.'); return; }
+  
+  const btn = document.getElementById('btn-extract');
+  if (btn) { btn.disabled = true; btn.textContent = 'Extracting...'; }
+
+  appendMessage('user', `Extract action items from meeting transcript for [${project}] (${meetingDate}${meetingTime ? ' ' + meetingTime : ''})`);
+  appendMessage('assistant', `Extracting structured summary, decisions, and action items for **${project}** with Gemini...`);
+  
+  try {
+    const res = await fetch('/api/extract', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcript: text, meeting_title: meetingTitle })
+    });
+    const result = await res.json();
+    if (result.status === 'success') {
+      extractedData = result.data;
+      extractedData.project = project;
+      extractedData.meeting_date = meetingDate;
+      extractedData.meeting_time = meetingTime;
+      populateReviewScreen(extractedData);
+      switchTab('review');
+      appendMessage('assistant', `Extracted **${extractedData.action_items.length} action items**, **${extractedData.decisions.length} decisions**, and **${extractedData.open_questions.length} open questions** for team **${project}** on **${meetingDate}**. Switched to **Review Screen**!`);
+    } else {
+      appendMessage('assistant', 'Extraction failed: ' + result.message);
+    }
+  } catch (err) {
+    appendMessage('assistant', 'Network error during extraction: ' + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Extract Action Items'; }
+  }
+}
+
+function populateReviewScreen(data) {
+  const overview = document.getElementById('review-overview');
+  overview.innerHTML = `
+    <strong>Title:</strong> ${data.title}<br>
+    <strong>Project / Team:</strong> <span class="tag low" style="margin-left:0.2rem;">${data.project || 'General'}</span><br>
+    <strong>Date & Time:</strong> 📅 ${data.meeting_date || 'Today'}${data.meeting_time ? ' ⏰ ' + data.meeting_time : ''}<br>
+    <strong>Attendees:</strong> ${(data.attendees || []).join(', ')}<br><br>
+    <strong>Summary:</strong> ${data.summary}
+  `;
+
+  const decisionsEl = document.getElementById('review-decisions');
+  if (data.decisions && data.decisions.length > 0) {
+    decisionsEl.innerHTML = data.decisions.map(d => `
+      <div style="margin-bottom:0.5rem; padding:0.5rem; background:#f1f5f9; border-radius:6px;">
+        <strong>${d.decision}</strong><br>
+        <span style="font-size:0.8rem; color:#64748b;">Rationale: ${d.context}</span>
+      </div>
+    `).join('');
+  } else {
+    decisionsEl.textContent = 'None';
+  }
+
+  const itemsEl = document.getElementById('review-action-items');
+  if (data.action_items && data.action_items.length > 0) {
+    itemsEl.innerHTML = data.action_items.map(it => `
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-left:4px solid #2563eb; border-radius:6px; padding:0.8rem 1rem; margin-bottom:0.6rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <strong>${it.title}</strong>
+          <span class="tag ${(it.priority||'medium').toLowerCase()}">${(it.priority||'medium').toUpperCase()}</span>
+        </div>
+        <div style="font-size:0.82rem; color:#64748b; margin-top:0.3rem;">
+          Owner: <strong>${it.owner}</strong> | Due: <strong>${it.due_date}</strong> | Status: <strong>${it.status}</strong>
+        </div>
+      </div>
+    `).join('');
+  } else {
+    itemsEl.textContent = 'None';
+  }
+}
+
+async function confirmAndSaveAll() {
+  if (!extractedData) {
+    alert('Please extract a transcript first.');
+    return;
+  }
+  const btn = document.getElementById('btn-confirm');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+
+  const projInput = document.getElementById('transcript-project');
+  const project = (extractedData && extractedData.project) || (projInput && projInput.value.trim()) || 'Project Horizon';
+
+  try {
+    const res = await fetch('/api/confirm_save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ meeting_analysis: extractedData, project: project })
+    });
+    const result = await res.json();
+    if (result.status === 'success') {
+      appendMessage('assistant', `Confirmed and saved to database for **${project}**! Meeting ID: **${result.meeting_id}**.`);
+      switchTab('actions');
+      loadActionItemsTable();
+      loadMetrics();
+      loadAttendeesDropdown();
+    } else {
+      appendMessage('assistant', 'Error saving meeting: ' + result.message);
+    }
+  } catch (err) {
+    appendMessage('assistant', 'Failed to connect: ' + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Confirm & Save to Registry'; }
+  }
+}
+
+async function loadActionItemsTable() {
+  const tbody = document.getElementById('action-table-body');
+  try {
+    const res = await fetch('/api/tasks');
+    const tasks = await res.json();
+    if (tasks.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#94a3b8;">No action items recorded yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = tasks.map(t => `
+      <tr>
+        <td><code>${t.id}</code></td>
+        <td><strong>${t.title}</strong><br><span style="font-size:0.8rem; color:#64748b;">${t.description || ''}</span></td>
+        <td><strong>${t.owner}</strong></td>
+        <td>${t.due_date}</td>
+        <td><span class="tag ${(t.priority||'medium').toLowerCase()}">${(t.priority||'medium').toUpperCase()}</span></td>
+        <td><span style="font-weight:600; text-transform:capitalize;">${t.status}</span></td>
+        <td>${t.project || 'General'}</td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7" style="color:red;">Error loading tasks: ${err.message}</td></tr>`;
+  }
+}
+
+async function loadProjectsDropdown() {
+  try {
+    const res = await fetch('/api/projects');
+    const projects = await res.json();
+    const select = document.getElementById('project-select');
+    if (!select) return;
+    const currentVal = select.value;
+    select.innerHTML = '<option value="ALL">All Projects / Cross-Functional</option>';
+    projects.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p;
+      opt.textContent = `📁 ${p}`;
+      select.appendChild(opt);
+    });
+    if (currentVal && projects.includes(currentVal)) {
+      select.value = currentVal;
+    }
+  } catch (err) {
+    console.error('Failed to load projects:', err);
+  }
+}
+
+async function loadAttendeesDropdown() {
+  await loadProjectsDropdown();
+  await refreshAttendeesForProject();
+}
+
+async function refreshAttendeesForProject() {
+  const projSelect = document.getElementById('project-select');
+  const project = projSelect ? projSelect.value : 'ALL';
+  try {
+    const url = project && project !== 'ALL' ? `/api/attendees?project=${encodeURIComponent(project)}` : '/api/attendees';
+    const res = await fetch(url);
+    const attendees = await res.json();
+    const select = document.getElementById('attendee-select');
+    if (!select) return;
+    select.innerHTML = project && project !== 'ALL' ? `<option value="ALL">All Attendees in ${project} (Full Digest)</option>` : '<option value="ALL">All Attendees (Full Digest)</option>';
+    attendees.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      select.appendChild(opt);
+    });
+  } catch (err) {
+    console.error('Failed to load attendees:', err);
+  }
+}
+
+function onProjectChanged() {
+  refreshAttendeesForProject();
+}
+
+async function triggerIndividualEmail() {
+  const projSelect = document.getElementById('project-select');
+  const project = projSelect ? projSelect.value : '';
+  const select = document.getElementById('attendee-select');
+  const individual = select ? select.value : 'ALL';
+  const container = document.getElementById('comms-output-container');
+  const title = document.getElementById('comms-output-title');
+  const box = document.getElementById('comms-output-box');
+
+  container.style.display = 'block';
+  title.textContent = individual === 'ALL' ? `👤 Individual Emails (${project !== 'ALL' ? project : 'All Attendees'})` : `👤 Individual Email for: ${individual}`;
+  box.innerHTML = '<em>Drafting personalized email highlighting assigned deliverables...</em>';
+
+  try {
+    const res = await fetch('/api/draft_individual_emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ meeting_id: '', project: project, individual: individual })
+    });
+    const data = await res.json();
+    rawCommsText = data.content;
+    box.innerHTML = marked.parse(rawCommsText);
+  } catch (err) {
+    box.innerHTML = `<span style="color:red;">Error: ${err.message}</span>`;
+  }
+}
+
+async function triggerCommsAction(type) {
+  const projSelect = document.getElementById('project-select');
+  const project = projSelect ? projSelect.value : '';
+  const container = document.getElementById('comms-output-container');
+  const title = document.getElementById('comms-output-title');
+  const box = document.getElementById('comms-output-box');
+
+  container.style.display = 'block';
+  box.innerHTML = '<em>Generating formatted document from database...</em>';
+
+  let endpoint = '/api/draft_email';
+  if (type === 'general_email') {
+    title.textContent = `📌 Team Recap Email: ${project !== 'ALL' ? project : 'All Teams'}`;
+    endpoint = '/api/draft_email';
+  } else if (type === 'agenda') {
+    title.textContent = `📋 Follow-Up Sync Agenda: ${project !== 'ALL' ? project : 'Active Projects'}`;
+    endpoint = '/api/generate_agenda';
+  }
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ meeting_id: '', project: project })
+    });
+    const data = await res.json();
+    rawCommsText = data.content;
+    box.innerHTML = marked.parse(rawCommsText);
+  } catch (err) {
+    box.innerHTML = `<span style="color:red;">Error: ${err.message}</span>`;
+  }
+}
+
+function copyCommsContent() {
+  if (!rawCommsText) return;
+  navigator.clipboard.writeText(rawCommsText).then(() => {
+    alert('Copied to clipboard!');
+  });
+}
+
+async function loadMetrics() {
+  try {
+    const res = await fetch('/api/metrics');
+    const data = await res.json();
+    
+    document.getElementById('metric-meetings').textContent = data.meetings;
+    document.getElementById('metric-active-items').textContent = data.active_items;
+    document.getElementById('metric-decisions').textContent = data.decisions;
+    document.getElementById('metric-questions').textContent = data.open_questions;
+
+    // Populate Hero Meeting Card
+    if (data.latest_meeting) {
+      document.getElementById('hero-title').textContent = data.latest_meeting.title;
+      document.getElementById('hero-date').textContent = data.latest_meeting.meeting_date || 'Recent';
+      document.getElementById('hero-summary').textContent = data.latest_meeting.summary;
+      
+      const attendeesBox = document.getElementById('hero-attendees');
+      attendeesBox.innerHTML = '';
+      (data.latest_meeting.attendees || []).forEach(a => {
+        const span = document.createElement('span');
+        span.className = 'hero-tag';
+        span.textContent = '👤 ' + a;
+        attendeesBox.appendChild(span);
+      });
+    }
+
+    // Populate Priority Visual Breakdown
+    const pContainer = document.getElementById('priority-progress-bars');
+    pContainer.innerHTML = '';
+    const totalItems = Object.values(data.priority_dist).reduce((a, b) => a + b, 0) || 1;
+    const priorities = [
+      { key: 'critical', label: 'Critical Priority', colorClass: 'fill-critical' },
+      { key: 'high', label: 'High Priority', colorClass: 'fill-high' },
+      { key: 'medium', label: 'Medium Priority', colorClass: 'fill-medium' },
+      { key: 'low', label: 'Low Priority', colorClass: 'fill-low' }
+    ];
+
+    priorities.forEach(p => {
+      const count = data.priority_dist[p.key] || 0;
+      const pct = Math.round((count / totalItems) * 100);
+      const div = document.createElement('div');
+      div.className = 'progress-item';
+      div.innerHTML = `
+        <div class="progress-header"><span>${p.label}</span><span>${count} tasks (${pct}%)</span></div>
+        <div class="progress-bar"><div class="progress-fill ${p.colorClass}" style="width:${pct}%"></div></div>
+      `;
+      pContainer.appendChild(div);
+    });
+
+    // Populate Owner Breakdown
+    const oContainer = document.getElementById('owner-distribution-bars');
+    oContainer.innerHTML = '';
+    for (const [owner, count] of Object.entries(data.owner_dist)) {
+      const div = document.createElement('div');
+      div.className = 'progress-item';
+      const pct = Math.round((count / totalItems) * 100);
+      div.innerHTML = `
+        <div class="progress-header"><span><strong>${owner}</strong></span><span>${count} tasks</span></div>
+        <div class="progress-bar"><div class="progress-fill fill-medium" style="width:${pct}%; background:#7c3aed;"></div></div>
+      `;
+      oContainer.appendChild(div);
+    }
+
+  } catch (err) {
+    console.error('Failed to load metrics:', err);
+  }
+}
+
+function appendMessage(role, text) {
+  const log = document.getElementById('log');
+  const msg = document.createElement('div');
+  msg.className = `msg ${role}`;
+  const b = document.createElement('div');
+  b.className = 'bubble';
+
+  if (role === 'assistant') {
+    b.innerHTML = marked.parse(text);
+  } else {
+    b.textContent = text;
+  }
+
+  msg.appendChild(b);
+  log.appendChild(msg);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function sendChat(message) {
+  try {
+    const res = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+    const data = await res.json();
+    if (data.parts) {
+      data.parts.forEach(p => {
+        if (p.text) appendMessage('assistant', p.text);
+      });
+    }
+  } catch (err) {
+    appendMessage('assistant', 'Error communicating with agent: ' + err.message);
+  }
+}
+
+document.getElementById('chat-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const input = document.getElementById('chat-input');
+  const val = input.value.trim();
+  if (!val) return;
+  appendMessage('user', val);
+  input.value = '';
+  sendChat(val);
+});
+
+// Set default date & time in Ingest section
+try {
+  const now = new Date();
+  const dateStr = now.toISOString().split('T')[0];
+  const timeStr = now.toTimeString().slice(0, 5);
+  const dateInput = document.getElementById('transcript-date');
+  const timeInput = document.getElementById('transcript-time');
+  if (dateInput) dateInput.value = dateStr;
+  if (timeInput) timeInput.value = timeStr;
+} catch(e) {}
+
+// Initial load
+loadActionItemsTable();
+loadAttendeesDropdown();
+loadMetrics();
+</script>
+</body>
+</html>
